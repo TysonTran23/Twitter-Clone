@@ -1,7 +1,7 @@
 import os
 import pdb
 
-from flask import Flask, flash, g, redirect, render_template, request, session
+from flask import Flask, flash, g, redirect, render_template, request, session, abort
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
@@ -212,6 +212,43 @@ def stop_following(follow_id):
     db.session.commit()
 
     return redirect(f"/users/{g.user.id}/following")
+
+
+@app.route("/users/<int:user_id>/likes")
+def show_all_liked_comments(user_id):
+    """Show all liked comments"""
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    user = User.query.get_or_404(user_id)
+    return render_template("users/likes.html", user=user, likes=user.likes)
+
+@app.route("/users/add_like/<int:comment_id>", methods=["POST"])
+def like_comment(comment_id):
+    """Like a comment"""
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+    
+    #Does not let a user like their own comment
+    liked_message = Message.query.get_or_404(comment_id)
+    if liked_message.user_id == g.user.id:
+        flash("You can't like your own comment")
+        return redirect("/")
+    
+    #Checks to see if User has already liked comment
+    #If so, unlike the comment, create a new list
+    user_likes = g.user.likes
+    if liked_message in user_likes:
+        g.user.likes = [like for like in user_likes if like != liked_message]
+
+    #Adds comment to User Liked List
+    else:
+        g.user.likes.append(liked_message)
+
+    db.session.commit()
+    return redirect ("/")
 
 
 @app.route("/users/profile", methods=["GET", "POST"])
