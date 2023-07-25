@@ -229,7 +229,9 @@ def profile():
             user.username = form.username.data
             user.email = form.email.data
             user.image_url = form.image_url.data or "/static/images/default-pic.png"
-            user.header_image_url = form.header_image_url.data or "/static/images/warbler-hero.jpg"
+            user.header_image_url = (
+                form.header_image_url.data or "/static/images/warbler-hero.jpg"
+            )
             user.bio = form.bio.data
             user.location = form.location.data
 
@@ -237,8 +239,6 @@ def profile():
 
             return redirect(f"/users/{user.id}")
         flash("That password is incorrect, unable to save changes", "danger")
-
-
 
     return render_template("users/edit.html", form=form)
 
@@ -322,7 +322,13 @@ def homepage():
     """
 
     if g.user:
-        messages = Message.query.order_by(Message.timestamp.desc()).limit(100).all()
+        following_id = [following.id for following in g.user.following] + [g.user.id]
+        messages = (
+            Message.query.filter(Message.user_id.in_(following_id))
+            .order_by(Message.timestamp.desc())
+            .limit(100)
+            .all()
+        )
 
         return render_template("home.html", messages=messages)
 
