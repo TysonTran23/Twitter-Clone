@@ -48,7 +48,7 @@ class MessageViewTestCase(TestCase):
         db.session.rollback()
         return resp
     
-    def get_users(self):
+    def test_get_users(self):
         with self.client as c:
             resp = c.get("/users")
 
@@ -66,7 +66,7 @@ class MessageViewTestCase(TestCase):
             self.assertIn("@testing", str(resp.data))
             self.assertNotIn("@efg", str(resp.data))
     
-    def show_user(self):
+    def test_show_user(self):
         with self.client as c:
             resp = c.get(f"/users/{self.u1.id}")
 
@@ -83,7 +83,7 @@ class MessageViewTestCase(TestCase):
             with c.session_transaction() as sess:
                 sess[CURR_USER_KEY] = self.testuser_id
 
-            resp = c.post(f"users/add_like/{m.id}", follows_redirects=True)
+            resp = c.post(f"users/add_like/8000", follow_redirects=True)
 
             self.assertEqual(resp.status_code, 200)
 
