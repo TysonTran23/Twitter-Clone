@@ -59,3 +59,34 @@ class MessageViewTestCase(TestCase):
             self.assertIn("@hij", str(resp.data))
             self.assertIn("@testing", str(resp.data))
     
+    def test_users_search(self):
+        with self.client as c:
+            resp = c.get("/users?q=test")
+
+            self.assertIn("@testing", str(resp.data))
+            self.assertNotIn("@efg", str(resp.data))
+    
+    def show_user(self):
+        with self.client as c:
+            resp = c.get(f"/users/{self.u1.id}")
+
+            self.assertEqual(resp.status_code, 200)
+
+            self.assertIn("@abc", str(resp.data))
+    
+    def test_add_like(self):
+        m = Message(id=8000, text="kiwis are the best", user_id=self.u1.id)
+        db.session.add(m)
+        db.session.commit()
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.testuser_id
+
+            resp = c.post(f"users/add_like/{m.id}", follows_redirects=True)
+
+            self.assertEqual(resp.status_code, 200)
+
+            likes = Likes.query.filter(Likes.message_id==8000).all()
+            self.assertEqual(len(likes), 1)
+            self.assertEqual(likes[0].user_id, self.testuser_id)
